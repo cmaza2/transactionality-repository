@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4977a4d9-2b87-4d31-ae75-3dbe98450141" name="Changes" comment="Actualziaciond e jar de microservicios para docker" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="useMavenConfig" value="true" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;SONARLINT_PRECOMMIT_ANALYSIS&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/crist/OneDrive/Documentos/NetBeansProjects/NttData/maza-testing/manage-microservices/Artifacts/accounts-movements&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;SDKs&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\crist\OneDrive\Documentos\NetBeansProjects\NttData\maza-testing\manage-microservices\Artifacts\accounts-movements" />
+      <recent name="C:\Users\crist\OneDrive\Documentos\NetBeansProjects\NttData\maza-testing\manage-microservices\Artifacts\people-management" />
+      <recent name="C:\Users\crist\OneDrive\Documentos\NetBeansProjects\NttData\maza-testing\manage-microservices\Artifacts\postgres" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\crist\OneDrive\Documentos\NetBeansProjects\NttData\maza-testing\manage-microservices\Artifacts" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Docker.Artifacts.postgres_1: Compose Deployment">
+    <configuration name="WebSecurity" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.maza.peoplemanagementservice.infrastructure.security.WebSecurity" />
+      <module name="people-management-service" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.maza.peoplemanagementservice.infrastructure.security.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AccountsMovementsServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="accounts-movements-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.maza.accountsmovementsservice.AccountsMovementsServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ManageMicroservicesApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="manage-microservices" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.maza.managemicroservices.ManageMicroservicesApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PeopleManagementServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="people-management-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.maza.peoplemanagementservice.PeopleManagementServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Artifacts.postgres_1: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="postgres_1" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="Artifacts/docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
+      <deployment type="docker-compose.yml">
+        <settings />
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Docker.Artifacts.postgres_1: Compose Deployment" />
+        <item itemvalue="Application.WebSecurity" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TaskManager">
+    <task id="LOCAL-00001" summary="Recative programation">
+      <created>1740066555782</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1740066555782</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Reactive programation">
+      <created>1740084145806</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1740084145806</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Actualziaciond e jar de microservicios para docker">
+      <created>1740084346319</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1740084346319</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Recative programation" />
+    <MESSAGE value="Reactive programation" />
+    <MESSAGE value="Actualziaciond e jar de microservicios para docker" />
+    <option name="LAST_COMMIT_MESSAGE" value="Actualziaciond e jar de microservicios para docker" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/people-management-service/src/main/java/com/maza/peoplemanagementservice/infrastructure/security/JWRAuthenticationFilter.java</url>
+          <line>20</line>
+          <option name="timeStamp" value="39" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/people-management-service/src/main/java/com/maza/peoplemanagementservice/infrastructure/security/WebSecurity.java</url>
+          <line>59</line>
+          <option name="timeStamp" value="40" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/accounts-movements-service/src/main/java/com/maza/accountsmovementsservice/infraestructure/adapter/controller/AccountController.java</url>
+          <line>77</line>
+          <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/accounts-movements-service/src/main/java/com/maza/accountsmovementsservice/infraestructure/adapter/controller/AccountController.java</url>
+          <line>38</line>
+          <option name="timeStamp" value="42" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
