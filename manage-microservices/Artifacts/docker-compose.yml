@@ -1,10 +1,10 @@
 version: '3.8'
 services:
-  postgres_1:
+  postgres:
     build:
       context: postgres
       dockerfile: Dockerfile
-    container_name: postgres_1
+    container_name: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -75,10 +75,10 @@ services:
     networks:
       - my-network
     depends_on:
-      - postgres_1
+      - postgres
       #condition: service_healthy
     environment:
-      WAIT_HOSTS: postgres_1:5432
+      WAIT_HOSTS: postgres:5432
 
 networks:
   my-network:
