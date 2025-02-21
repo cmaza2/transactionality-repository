@@ -31,7 +31,7 @@ Se crea contenedores a traves del docker-compose.yml para el despliegue de los 2
     "name":"Alberto Spencer",
     "gender":"MASCULINO",
     "age":"31",
-    "id":"1104647236",
+    "idCard":"1102456789",
     "address":"Otavala sn y principal",
     "phone":"098254785",
     "password":"12345",
@@ -45,19 +45,15 @@ Se crea contenedores a traves del docker-compose.yml para el despliegue de los 2
     "accountType":"Ahorros",
     "initialBalance":2000.00,
     "status":true,
-    "customer":"1104637911"
+    "customer":"1102456789"
 }
 ```
 - Para Crear un nuevo movimiento se utiliza la siguiente trama
 ```json
 {
-    "account": 
-        {
-            "accountNumber": "2901085464"
-        }
-    ,
+    "account":  "478759",
     "transactionType": "Retiro",
-    "value": "300"
+    "value": "550.60"
 }
 ```
 ## Arquitectura
