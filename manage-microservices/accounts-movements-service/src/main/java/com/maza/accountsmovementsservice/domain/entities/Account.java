@@ -8,13 +8,13 @@ import java.math.BigDecimal;
  */
 @Data
 public class Account {
-    private Long idAccount;
-    private Long idCustomer;
-    private String accountNumber;
-    private String accountType;
-    private BigDecimal initialBalance;
-    private boolean status;
-    private String customer;
+    public Long idAccount;
+    public Long idCustomer;
+    public String accountNumber;
+    public String accountType;
+    public BigDecimal initialBalance;
+    public boolean status;
+    public String customer;
 
 
 }

@@ -17,7 +17,7 @@ public class TypeMovement {
      * @return List of empty values.
      */
 
-    public static final BigDecimal movement(String tyoeMovement, BigDecimal balance, BigDecimal value) throws Exception {
+    public static final BigDecimal movement(String tyoeMovement, BigDecimal balance, BigDecimal value) {
         if (tyoeMovement.toLowerCase().equals("retiro")) {
             return withdrawal(balance, value);
         } else if (tyoeMovement.toLowerCase().equals("deposito")) {

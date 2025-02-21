@@ -1,6 +1,8 @@
 package com.maza.accountsmovementsservice.domain.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -8,6 +10,8 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class TransactionsDTO {
     LocalDate date;
     String customer;

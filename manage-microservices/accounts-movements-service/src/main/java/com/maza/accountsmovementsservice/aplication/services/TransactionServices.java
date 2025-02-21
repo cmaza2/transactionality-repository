@@ -1,180 +1,130 @@
 package com.maza.accountsmovementsservice.aplication.services;
 
-
-import com.maza.accountsmovementsservice.aplication.mapper.TransactionDtoMapper;
 import com.maza.accountsmovementsservice.aplication.mapper.TransactionRequestMapper;
 import com.maza.accountsmovementsservice.domain.dto.TransactionDTO;
 import com.maza.accountsmovementsservice.domain.dto.TransactionsDTO;
 import com.maza.accountsmovementsservice.domain.dto.request.TransactionRequestDTO;
 import com.maza.accountsmovementsservice.domain.entities.Account;
-import com.maza.accountsmovementsservice.domain.entities.Transactions;
 import com.maza.accountsmovementsservice.domain.port.AccountPersistencePort;
 import com.maza.accountsmovementsservice.domain.port.TransactionPersistencePort;
 import com.maza.accountsmovementsservice.domain.dto.CustomerDTO;
 import com.maza.accountsmovementsservice.aplication.usecases.TransactionUseCase;
 import com.maza.accountsmovementsservice.aplication.util.TypeMovement;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class TransactionServices implements TransactionUseCase {
-    private TransactionPersistencePort transactionPersistencePort;
-    private AccountPersistencePort accountPersistencePort;
-    private TransactionRequestMapper transactionRequestMapper;
-    private TransactionDtoMapper transactionDtoMapper;
+    private final TransactionPersistencePort transactionPersistencePort;
+    private final AccountPersistencePort accountPersistencePort;
+    private final TransactionRequestMapper transactionRequestMapper;
+    private final ModelMapper modelMapper;
+
 
     @Autowired
     public TransactionServices(AccountPersistencePort accountPersistencePort,
                                TransactionPersistencePort transactionPersistencePort,
                                TransactionRequestMapper transactionRequestMapper,
-                               TransactionDtoMapper transactionDtoMapper
-                               ) {
+                               ModelMapper modelMapper) {
         this.transactionPersistencePort = transactionPersistencePort;
         this.transactionRequestMapper = transactionRequestMapper;
-        this.transactionDtoMapper = transactionDtoMapper;
+        this.modelMapper = modelMapper;
         this.accountPersistencePort = accountPersistencePort;
     }
 
-    /**
-     * Method that calls the repository and list all transactions
-     *
-     * @return List of transactions.
-     */
     @Override
-    public List<TransactionDTO> getTransactions() {
-        var transaction = transactionPersistencePort.findAll();
-        return transaction.stream()
-                .map(transactionDtoMapper::toDto)
-                .collect(Collectors.toList());
+    public Flux<TransactionDTO> getTransactions() {
+        return transactionPersistencePort.findAll()
+                .map(transaction -> modelMapper.map(transaction, TransactionDTO.class));
     }
 
-    /**
-     * Method that calls the repository and return an transaction by id
-     *
-     * @param transactionId id of transaction.
-     * @return Transaction information
-     */
     @Override
-    public TransactionDTO getTransactionById(Long transactionId) {
-        var transaction = transactionPersistencePort.findById(transactionId);
-        var transactionRequestDTO = transactionDtoMapper.toDto(transaction);
-        log.info("Trama de respuesta buscar transaccion por id {}: {}",transactionId,transactionRequestDTO);
-        return transactionRequestDTO;
+    public Mono<TransactionDTO> getTransactionById(Long transactionId) {
+        return transactionPersistencePort.findById(transactionId)
+                .map(transaction -> modelMapper.map(transaction, TransactionDTO.class))
+                .doOnNext(transactionRequestDTO -> log.info("Trama de respuesta buscar transaccion por id {}: {}", transactionId, transactionRequestDTO));
     }
 
-    /**
-     * Method that calls the repository and create an transaction
-     *
-     * @param transactionRequestDTO Tranction generated.
-     * @return Transaction information
-     */
     @Override
-    public TransactionDTO createTransaction(TransactionRequestDTO transactionRequestDTO) throws Exception {
+    public Mono<TransactionDTO> createTransaction(TransactionRequestDTO transactionRequestDTO) {
         String accountNumber = transactionRequestDTO.getAccount();
-        Account account = accountPersistencePort.getAccountInformation(accountNumber);
-        account = TypeMovement.validateExistAccount(account, accountNumber);
-        BigDecimal balance = getBalance(account.getAccountNumber());
-        balance = balance == null ? account.getInitialBalance() : balance;
-        balance = TypeMovement.movement(transactionRequestDTO.getTransactionType(), balance, transactionRequestDTO.getValue());
-        var transaction = transactionRequestMapper.toDomain(transactionRequestDTO);
-        transaction.setIdAccount(account.getIdAccount());
-        transaction.setBalance(balance);
-        transaction.setDate(LocalDate.now());
-        transaction.setValue(transaction.getTransactionType().toLowerCase()
-                .equals("retiro")?new BigDecimal("-"+transaction.getValue()):transaction.getValue());
-        var transactionCreated = transactionPersistencePort.save(transaction);
-        var transactionResponseDTO=transactionDtoMapper.toDto(transactionCreated);
-        log.info("Trama de salida crear movimiento: {}",transactionResponseDTO);
-        return transactionResponseDTO;
+        return accountPersistencePort.getAccountInformation(accountNumber)
+                .switchIfEmpty(Mono.error(new Exception("Account not found")))
+                .flatMap(account -> {
+                    Account validatedAccount = TypeMovement.validateExistAccount(account, accountNumber);
+                    return getBalance(validatedAccount.getAccountNumber())
+                            .defaultIfEmpty(validatedAccount.getInitialBalance())
+                            .flatMap(balance -> {
+                                BigDecimal updatedBalance = TypeMovement.movement(transactionRequestDTO.getTransactionType(),
+                                        balance, transactionRequestDTO.getValue());
+                                var transaction = transactionRequestMapper.toDomain(transactionRequestDTO);
+                                transaction.setIdAccount(validatedAccount.getIdAccount());
+                                transaction.setBalance(updatedBalance);
+                                transaction.setDate(LocalDate.now());
+                                transaction.setValue(transaction.getTransactionType().toLowerCase().equals("retiro") ? new BigDecimal("-" + transaction.getValue()) : transaction.getValue());
+                                return transactionPersistencePort.save(transaction)
+                                        .map(transactionDto -> modelMapper.map(transactionDto, TransactionDTO.class))
+                                        .doOnNext(transactionResponseDTO -> log.info("Trama de salida crear movimiento: {}", transactionResponseDTO));
+                            });
+                });
     }
 
-    /**
-     * Method that calls the repository and create an transaction
-     *
-     * @param id                    Tranction generated.
-     * @param transactionRequestDTO Tranction generated.
-     * @return Transaction information
-     */
     @Override
-    public TransactionDTO updateTransaction(Long id, TransactionRequestDTO transactionRequestDTO) {
-        Account account = accountPersistencePort.getAccountInformation(transactionRequestDTO.getAccount());
-        var transaction = transactionRequestMapper.toDomain(transactionRequestDTO);
-        transaction.setIdTransaction(id);
-        transaction.setIdAccount(account.getIdAccount());
-        var transactionCreated = transactionPersistencePort.save(transaction);
-        var transactionResponseDTO = transactionDtoMapper.toDto(transactionCreated);
-        log.info("Trama de salida actualizar movimiento por id: id={}, trama= {}",id,transactionResponseDTO);
-        return transactionResponseDTO;
+    public Mono<TransactionDTO> updateTransaction(Long id, TransactionRequestDTO transactionRequestDTO) {
+        return accountPersistencePort.getAccountInformation(transactionRequestDTO.getAccount())
+                .switchIfEmpty(Mono.error(new Exception("Account not found")))
+                .flatMap(account -> {
+                    var transactionExists = transactionRequestMapper.toDomain(transactionRequestDTO);
+                    transactionExists.setIdTransaction(id);
+                    transactionExists.setIdAccount(account.getIdAccount());
+                    return transactionPersistencePort.save(transactionExists)
+                            .map(transaction -> modelMapper.map(transaction, TransactionDTO.class))
+                            .doOnNext(transactionResponseDTO -> log.info("Trama de salida actualizar movimiento por id: id={}, trama= {}", id, transactionResponseDTO));
+                });
     }
 
-    /**
-     * Method that calls the repository and delete a transaction
-     *
-     * @param transactionId id of transaction.
-     */
     @Override
-    public void deleteTransaction(Long transactionId) {
-        transactionPersistencePort.deleteById(transactionId);
-
+    public Mono<Void> deleteTransaction(Long transactionId) {
+        return transactionPersistencePort.deleteById(transactionId);
     }
 
-    /**
-     * Method that calls the repository and get the actual balance of a transaction
-     *
-     * @param accountNumber id of transaction.
-     * @return Balance available
-     */
     @Override
-    public BigDecimal getBalance(String accountNumber) {
-        var transaction = transactionPersistencePort.findFirstByAccountNumberOrderByidDesc( accountPersistencePort.getAccountInformation(accountNumber).getIdAccount());
-        BigDecimal balance = transaction != null ? transaction.getBalance() : null;
-        log.info("Saldo de cuenta {} :",balance);
-        return balance;
+    public Mono<BigDecimal> getBalance(String accountNumber) {
+        return accountPersistencePort.getAccountInformation(accountNumber)
+                .switchIfEmpty(Mono.error(new Exception("Account not found")))
+                .flatMap(account -> transactionPersistencePort.findFirstByAccountNumberOrderByidDesc(account.getIdAccount())
+                        .map(transaction -> transaction.getBalance())
+                        .defaultIfEmpty(account.getInitialBalance()));
     }
 
-    /**
-     * Method that calls the repository and get the transactions by customers and dates
-     *
-     * @param initDate   initial Date
-     * @param finalDate  final Date
-     * @param customer Customer Id
-     * @param customer   Name customer Date
-     * @return List of transactions
-     */
-    @Override
-    public List<TransactionsDTO> getMovementsByUserAndDate(LocalDate initDate, LocalDate finalDate, CustomerDTO customer) {
-        var accounts=accountPersistencePort.findByIdentification(customer.getIdCustomer().toString());
-        var accountsId = accounts.stream()
-                .map(Account::getIdAccount)
-                .collect(Collectors.toList());
-        List<Transactions> transaction = transactionPersistencePort.getMovementsByAccounts(initDate,finalDate,accountsId);
 
-        List<TransactionsDTO> lstTransaction = new ArrayList<>();
-        for (Transactions trx : transaction) {
-            Account accountsClient=accountPersistencePort.findById(trx.getIdAccount());
-            TransactionsDTO transactionsDTO = new TransactionsDTO();
-            transactionsDTO.setDate(trx.getDate());
-            transactionsDTO.setCustomer(customer.getName());
-            transactionsDTO.setAccountNumber(accountsClient.getAccountNumber());
-            transactionsDTO.setAccountType(accountsClient.getAccountType());
-            transactionsDTO.setInitialBalance(accountsClient.getInitialBalance());
-            transactionsDTO.setStatus(accountsClient.isStatus());
-            transactionsDTO.setTransactionType(trx.getTransactionType());
-            transactionsDTO.setValue(trx.getValue());
-            transactionsDTO.setBalance(trx.getBalance());
-            lstTransaction.add(transactionsDTO);
-        }
-        log.info("Transacciones realizadas por cliente {}:", lstTransaction.stream()
-                .map(TransactionsDTO::toString)
-                .collect(Collectors.joining("; ")));
-        return lstTransaction;
+    @Override
+    public Flux<TransactionsDTO> getMovementsByUserAndDate(LocalDate initDate, LocalDate finalDate, CustomerDTO customer, String accountNumber) {
+        return accountPersistencePort.findByIdentificationAndAcount(customer.getIdCustomer(), accountNumber)
+                .switchIfEmpty(Mono.error(new Exception("Account not found")))
+                .flatMapMany(account -> transactionPersistencePort.getMovementsByAccounts(initDate, finalDate, account.getIdAccount())
+                        .map(transaction -> {
+                            TransactionsDTO transactionsDTO = new TransactionsDTO();
+                            transactionsDTO.setDate(transaction.getDate());
+                            transactionsDTO.setCustomer(customer.getName());
+                            transactionsDTO.setAccountNumber(account.getAccountNumber());
+                            transactionsDTO.setAccountType(account.getAccountType());
+                            transactionsDTO.setInitialBalance(account.getInitialBalance());
+                            transactionsDTO.setStatus(account.isStatus());
+                            transactionsDTO.setTransactionType(transaction.getTransactionType());
+                            transactionsDTO.setValue(transaction.getValue());
+                            transactionsDTO.setBalance(transaction.getBalance());
+                            return transactionsDTO;
+                        })
+                        .doOnNext(transactionsDTO -> log.info("Transacciones realizadas por cliente {}:", transactionsDTO)));
     }
 }

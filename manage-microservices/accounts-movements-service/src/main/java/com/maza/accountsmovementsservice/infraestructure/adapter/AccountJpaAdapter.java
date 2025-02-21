@@ -3,85 +3,80 @@ package com.maza.accountsmovementsservice.infraestructure.adapter;
 import com.maza.accountsmovementsservice.domain.entities.Account;
 import com.maza.accountsmovementsservice.domain.port.AccountPersistencePort;
 import com.maza.accountsmovementsservice.domain.repository.AccountRepository;
-import com.maza.accountsmovementsservice.infraestructure.entities.AccountEntity;
 import com.maza.accountsmovementsservice.infraestructure.mapper.AccountDboMapper;
 import com.maza.accountsmovementsservice.infraestructure.util.AccountException;
 import jakarta.transaction.Transactional;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.sql.SQLException;
-import java.util.List;
-import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @Transactional
 public class AccountJpaAdapter implements AccountPersistencePort {
     private final AccountRepository accountRepository;
     private final AccountDboMapper accountDboMapper;
-    private static final String MESSAGE_ACCOUNT="ACCOUNT NOT FOUND";
+    private ModelMapper modelMapper;
+    private static final String MESSAGE_ACCOUNT = "ACCOUNT NOT FOUND";
 
-    public AccountJpaAdapter(AccountRepository accountRepository, AccountDboMapper accountDboMapper) {
+    @Autowired
+    public AccountJpaAdapter(AccountRepository accountRepository, AccountDboMapper accountDboMapper,ModelMapper modelMapper){
         this.accountRepository = accountRepository;
         this.accountDboMapper = accountDboMapper;
+        this.modelMapper = modelMapper;
     }
+
     @Override
-    public Account save(Account accountDomain){
+    public Mono<Account> save(Account accountDomain) {
         var userToSave = accountDboMapper.toDbo(accountDomain);
-        var userSaved =new AccountEntity();
-        userSaved = accountRepository.save(userToSave);
-        return accountDboMapper.toDomain(userSaved);
+        return accountRepository.save(userToSave)
+                .map(account -> modelMapper.map(account, Account.class));
     }
+
     @Override
-    public Account update(Account customerDomain) {
+    public Mono<Account> update(Account customerDomain) {
         var userToUpdate = accountDboMapper.toDbo(customerDomain);
-        var userUpdated = accountRepository.save(userToUpdate);
-        return accountDboMapper.toDomain(userUpdated);
+        return accountRepository.save(userToUpdate)
+                .map(account -> modelMapper.map(account, Account.class));
     }
 
     @Override
-    public List<Account> findByIdentification(String id) {
-        var optionalAccount = accountRepository.findAccountByIdentification(id);
-        var account=optionalAccount
-                .stream()
-                .map(accountDboMapper::toDomain)
-                .collect(Collectors.toList());
-        return account;
+    public Flux<Account> findByIdentification(Long id) {
+        return accountRepository.findAccountEntityByIdCustomer(id)
+                .map(account -> modelMapper.map(account, Account.class))
+                .switchIfEmpty(Mono.error(new AccountException(HttpStatus.NOT_FOUND, String.format(MESSAGE_ACCOUNT, id))));
     }
 
     @Override
-    public Account findById(Long id) {
-        var optionalAccount = accountRepository.findById(id);
-        if (optionalAccount.isEmpty()){
-           throw new AccountException(HttpStatus.NOT_FOUND,
-                    String.format(MESSAGE_ACCOUNT, id));
-        }
-
-        return accountDboMapper.toDomain(optionalAccount.get());
-    }
-
-
-    @Override
-    public void deleteById(Long id) {
-        accountRepository.deleteById(id);
+    public Mono<Account> findByIdentificationAndAcount(Long id, String accountNumber) {
+        return accountRepository.findAccountEntityByIdCustomerAndAccountNumber(id, accountNumber)
+                .map(account -> modelMapper.map(account, Account.class));
     }
 
     @Override
-    public List<Account> findAll() {
+    public Mono<Account> findById(Long id) {
+        return accountRepository.findById(id)
+                .switchIfEmpty(Mono.error(new AccountException(HttpStatus.NOT_FOUND, String.format(MESSAGE_ACCOUNT, id))))
+                .map(account -> modelMapper.map(account, Account.class));
+    }
+
+    @Override
+    public Mono<Void> deleteById(Long id) {
+        return accountRepository.deleteById(id);
+    }
+
+    @Override
+    public Flux<Account> findAll() {
         return accountRepository.findAll()
-                .stream()
-                .map(accountDboMapper::toDomain)
-                .collect(Collectors.toList());
+                .map(account -> modelMapper.map(account, Account.class));
     }
 
     @Override
-    public Account getAccountInformation(String accountNumber) {
-        var optionalAccount = accountRepository.findAccountByAccountNumber(accountNumber);
-        if (optionalAccount.isEmpty()){
-            throw new AccountException(HttpStatus.BAD_REQUEST,
-                    String.format(MESSAGE_ACCOUNT, accountNumber));
-        }
-
-        return accountDboMapper.toDomain(optionalAccount.get());
+    public Mono<Account> getAccountInformation(String accountNumber) {
+        return accountRepository.findAccountByAccountNumber(accountNumber)
+                .switchIfEmpty(Mono.error(new AccountException(HttpStatus.BAD_REQUEST, String.format(MESSAGE_ACCOUNT, accountNumber))))
+                .map(account -> modelMapper.map(account, Account.class));
     }
 }

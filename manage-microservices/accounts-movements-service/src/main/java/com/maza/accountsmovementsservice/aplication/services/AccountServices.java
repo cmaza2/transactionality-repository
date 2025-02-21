@@ -1,34 +1,32 @@
 package com.maza.accountsmovementsservice.aplication.services;
 
-
-import com.maza.accountsmovementsservice.aplication.mapper.AccountDtoMapper;
 import com.maza.accountsmovementsservice.aplication.mapper.AccountRequestMapper;
 import com.maza.accountsmovementsservice.aplication.usecases.AccountsUseCase;
-import com.maza.accountsmovementsservice.domain.dto.Account;
+import com.maza.accountsmovementsservice.domain.dto.AccountDTO;
 import com.maza.accountsmovementsservice.domain.dto.request.AccountRequestDTO;
 import com.maza.accountsmovementsservice.domain.port.AccountPersistencePort;
 import com.maza.accountsmovementsservice.domain.dto.CustomerDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
 public class AccountServices implements AccountsUseCase {
     private final AccountPersistencePort accountPersistencePort;
     private final AccountRequestMapper accountRequestMapper;
-    private final AccountDtoMapper accountDtoMapper;
+    private final ModelMapper modelMapper;
 
     @Autowired
     public AccountServices(final AccountPersistencePort accountPersistencePort,
                            final AccountRequestMapper accountRequestMapper,
-                           final AccountDtoMapper accountDtoMapper) {
+                           final ModelMapper modelMapper) {
         this.accountPersistencePort = accountPersistencePort;
         this.accountRequestMapper = accountRequestMapper;
-        this.accountDtoMapper = accountDtoMapper;
+        this.modelMapper = modelMapper;
 
     }
 
@@ -38,11 +36,22 @@ public class AccountServices implements AccountsUseCase {
      * @return List of accounts.
      */
     @Override
-    public List<Account> getAccounts() {
-        var account = accountPersistencePort.findAll();
-        return  account.stream()
-                .map(accountDtoMapper::toDto)
-                .collect(Collectors.toList());
+    public Flux<AccountDTO> getAccounts() {
+        return accountPersistencePort.findAll()
+                .map(account -> modelMapper.map(account, AccountDTO.class));
+    }
+    /**
+     * Method that calls the repository and recovery an account by identification
+     *
+     * @param idCustomer Id Number.
+     * @param accountNumber Account.
+     * @return Account information
+     */
+    @Override
+    public Mono<AccountDTO> findByIdentificationAndAccount(Long idCustomer, String accountNumber) {
+        log.info("Cuenta a buscar por identificacion: {}", idCustomer);
+        return accountPersistencePort.findByIdentificationAndAcount(idCustomer, accountNumber)
+                .map(account -> modelMapper.map(account, AccountDTO.class));
     }
     /**
      * Method that calls the repository and recovery an account by identification
@@ -51,12 +60,10 @@ public class AccountServices implements AccountsUseCase {
      * @return Account information
      */
     @Override
-    public List<Account> findByIdentification(Long idCustomer) {
-        log.info("Cuenta a buscar por identificacion: {}",idCustomer);
-        var account =  accountPersistencePort.findByIdentification(String.valueOf(idCustomer));
-        return  account.stream()
-                .map(accountDtoMapper::toDto)
-                .collect(Collectors.toList());
+    public Flux<AccountDTO> findByIdentification(Long idCustomer) {
+        log.info("Cuenta a buscar por identificacion: {}", idCustomer);
+        return accountPersistencePort.findByIdentification(idCustomer)
+                .map(account -> modelMapper.map(account, AccountDTO.class));
     }
 
     /**
@@ -66,24 +73,22 @@ public class AccountServices implements AccountsUseCase {
      * @return Account information
      */
     @Override
-    public Account create(AccountRequestDTO accountRequestDTO, CustomerDTO customerDTO) {
+    public Mono<AccountDTO> create(AccountRequestDTO accountRequestDTO, CustomerDTO customerDTO) {
         var customer = accountRequestMapper.toDomain(accountRequestDTO);
         customer.setIdCustomer(customerDTO.getIdCustomer());
-        var customerCreated = accountPersistencePort.save(customer);
-        var customerResponseDTO = accountDtoMapper.toDto(customerCreated);
-        log.info("Trama de salida crear cuenta: {}",customerResponseDTO);
-        return customerResponseDTO;
+        return accountPersistencePort.save(customer)
+                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .doOnNext(customerResponseDTO -> log.info("Trama de salida crear cuenta: {}", customerResponseDTO));
     }
 
     @Override
-    public Account update(Long id, Long idCustomer, AccountRequestDTO accountRequestDTO) {
-        var account = accountRequestMapper.toDomain(accountRequestDTO);
-        account.setIdAccount(id);
-        account.setIdCustomer(idCustomer);
-        var accountUpdate = accountPersistencePort.update(account);
-        var accountResponseDto = accountDtoMapper.toDto(accountUpdate);
-        log.info("Trama de salida actualizar cuenta: {}",accountResponseDto);
-        return accountResponseDto;
+    public Mono<AccountDTO> update(Long id, Long idCustomer, AccountRequestDTO accountRequestDTO) {
+        var accountExists = accountRequestMapper.toDomain(accountRequestDTO);
+        accountExists.setIdAccount(id);
+        accountExists.setIdCustomer(idCustomer);
+        return accountPersistencePort.update(accountExists)
+                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .doOnNext(accountResponseDto -> log.info("Trama de salida actualizar cuenta: {}", accountResponseDto));
     }
 
     /**
@@ -93,11 +98,10 @@ public class AccountServices implements AccountsUseCase {
      * @return Account information
      */
     @Override
-    public Account getAccountById(Long accountId) {
-        var account =  accountPersistencePort.findById(accountId);
-        var accountDTO = accountDtoMapper.toDto(account);
-        log.info("Id y trama de salida obtener cuenta: id={},trama={}",accountId,accountDTO);
-        return accountDTO;
+    public Mono<AccountDTO> getAccountById(Long accountId) {
+        return accountPersistencePort.findById(accountId)
+                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .doOnNext(accountDTO -> log.info("Id y trama de salida obtener cuenta: id={},trama={}", accountId, accountDTO));
     }
     /**
      * Method that calls the repository and deletes an account
@@ -105,9 +109,9 @@ public class AccountServices implements AccountsUseCase {
      * @param accountId id of account.
      */
     @Override
-    public void deleteAccount(Long accountId) {
-        accountPersistencePort.deleteById(accountId);
-        log.info("Cuenta con id {} eliminada correctamente",accountId);
+    public Mono<Void> deleteAccount(Long accountId) {
+        return accountPersistencePort.deleteById(accountId)
+                .doOnSuccess(unused -> log.info("Cuenta con id {} eliminada correctamente", accountId));
     }
 
     /**
@@ -117,11 +121,10 @@ public class AccountServices implements AccountsUseCase {
      * @return Account information
      */
     @Override
-    public Account getAccountInformation(String accountNumber) {
-        var account = accountPersistencePort.getAccountInformation(accountNumber);
-        var accountRequestDTO=accountDtoMapper.toDto(account);
-        log.info("Información de la cuenta {} :{}",accountNumber,accountRequestDTO);
-        return accountRequestDTO;
+    public Mono<AccountDTO> getAccountInformation(String accountNumber) {
+        return accountPersistencePort.getAccountInformation(accountNumber)
+                .map(account -> modelMapper.map(account, AccountDTO.class))
+                .doOnNext(accountRequestDTO -> log.info("Información de la cuenta {} :{}", accountNumber, accountRequestDTO));
     }
 
 }

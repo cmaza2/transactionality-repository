@@ -1,5 +1,17 @@
 version: '3.8'
 services:
+  postgres_1:
+    build:
+      context: postgres
+      dockerfile: Dockerfile
+    container_name: postgres_1
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_1_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+
   cont-db:
     container_name: cont-db
     build:
@@ -11,17 +23,6 @@ services:
       - my-network
     volumes:
       - mysql-data:/var/lib/mysql
-  cont-db2:
-    container_name: cont-db2
-    build:
-      context: mysql-db2
-      dockerfile: Dockerfile
-    ports:
-      - "3307:3306"
-    networks:
-      - my-network
-    volumes:
-      - mysql-data2:/var/lib/mysql
 
   springboot-customer:
     container_name: springboot-customer
@@ -74,10 +75,10 @@ services:
     networks:
       - my-network
     depends_on:
-      - cont-db2
+      - postgres_1
       #condition: service_healthy
     environment:
-      WAIT_HOSTS: cont-db2:3307
+      WAIT_HOSTS: postgres_1:5432
 
 networks:
   my-network:
@@ -87,3 +88,4 @@ volumes:
     driver: local
   mysql-data2:
     driver: local
+  postgres_1_data:

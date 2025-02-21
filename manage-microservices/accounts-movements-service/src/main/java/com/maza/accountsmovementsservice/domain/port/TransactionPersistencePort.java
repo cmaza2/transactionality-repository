@@ -2,20 +2,17 @@ package com.maza.accountsmovementsservice.domain.port;
 
 import com.maza.accountsmovementsservice.domain.entities.Transaction;
 import com.maza.accountsmovementsservice.domain.entities.Transactions;
-import com.maza.accountsmovementsservice.domain.dto.CustomerDTO;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 
 public interface TransactionPersistencePort {
-    Transaction save(Transaction transaction);
-    Transaction findById(Long id);
-    void deleteById(Long id);
-    List<Transaction> findAll();
-    Transaction update(Transaction transaction);
-
-    Transaction findFirstByAccountNumberOrderByidDesc(Long idAccount);
-
-    List<Transactions> getMovementsByUserAndDate(LocalDate initDate, LocalDate finalDate, CustomerDTO customer);
-    List<Transactions> getMovementsByAccounts(LocalDate initDate, LocalDate finalDate, List<Long> accounts);
+    Mono<Transaction> save(Transaction transaction);
+    Mono<Transaction> findById(Long id);
+    Mono<Void> deleteById(Long id);
+    Flux<Transaction> findAll();
+    Mono<Transaction> update(Transaction transaction);
+    Mono<Transaction> findFirstByAccountNumberOrderByidDesc(Long idAccount);
+    Flux<Transactions> getMovementsByAccounts(LocalDate initDate, LocalDate finalDate, Long accounts);
 }

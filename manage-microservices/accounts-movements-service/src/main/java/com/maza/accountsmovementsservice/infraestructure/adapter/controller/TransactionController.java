@@ -4,7 +4,6 @@ import com.maza.accountsmovementsservice.aplication.services.TransactionServices
 import com.maza.accountsmovementsservice.aplication.usecases.TransactionUseCase;
 import com.maza.accountsmovementsservice.domain.dto.TransactionDTO;
 import com.maza.accountsmovementsservice.domain.dto.request.TransactionRequestDTO;
-import com.maza.accountsmovementsservice.infraestructure.util.ResponseObject;
 import com.maza.accountsmovementsservice.domain.dto.CustomerDTO;
 import com.maza.accountsmovementsservice.domain.dto.TransactionsDTO;
 import com.maza.accountsmovementsservice.infraestructure.adapter.out.GetCustomerService;
@@ -14,13 +13,12 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/movimientos")
@@ -46,62 +44,63 @@ public class TransactionController {
 
     @GetMapping
     @ApiOperation(value = "getTransactions", notes = "gets all transactions made")
-    public ResponseEntity<List<TransactionDTO>> getTransactions() {
-        List<TransactionDTO> transactions = transactionUseCase.getTransactions();
-        log.info("Trama de salida: {}",transactions);
-        return ResponseEntity.ok(transactions);
+    public Flux<TransactionDTO> getTransactions() {
+        return transactionUseCase.getTransactions()
+                .doOnNext(transactions -> log.info("Trama de salida: {}", transactions));
     }
 
     @PostMapping
     @ApiOperation(value = "createTransaction", notes = "Register a new transaction")
-    public ResponseEntity<Object> createTransaction(@Valid @RequestBody TransactionRequestDTO transactionRequestDTO) throws Exception {
-        log.info("Trama de entrada: {}",transactionRequestDTO);
-        TransactionDTO createdMovement = transactionUseCase.createTransaction(transactionRequestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseObject("ok", "Transaction created sucesfully", createdMovement));
+    public Mono<TransactionDTO> createTransaction(@Valid @RequestBody TransactionRequestDTO transactionRequestDTO) throws Exception {
+        log.info("Trama de entrada: {}", transactionRequestDTO);
+        return transactionUseCase.createTransaction(transactionRequestDTO);
     }
 
     @PutMapping("/{id}")
     @ApiOperation(value = "updatetransaction", notes = "Update Transaction by id")
-    public ResponseEntity<ResponseObject> updatetransaction(@Valid @PathVariable Long id, @RequestBody TransactionRequestDTO transactionRequestDTO) {
+    public Mono<TransactionDTO> updateTransaction(@Valid @PathVariable Long id, @RequestBody TransactionRequestDTO transactionRequestDTO) {
         log.info("Id y trama de movimiento a actualizar: id={}, trama={}", id, transactionRequestDTO);
-        return ResponseEntity.ok(new ResponseObject("ok", "Transaction with id " + id + " updated succesfully", transactionUseCase.updateTransaction(id,transactionRequestDTO)));
+        return transactionUseCase.updateTransaction(id, transactionRequestDTO);
     }
 
     @DeleteMapping("/{id}")
     @ApiOperation(value = "deleteTransaction", notes = "Delete transaction by id")
-    public ResponseEntity<ResponseObject> deleteTransaction(@PathVariable Long id) {
+    public Mono<Void> deleteTransaction(@PathVariable Long id) {
         log.info("Id de movimiento a eliminar: id={}", id);
-        transactionUseCase.deleteTransaction(id);
-        return ResponseEntity.ok(new ResponseObject("ok", "Transaction with id " + id + " deleted correctly", ""));
+        return transactionUseCase.deleteTransaction(id);
     }
+
     @GetMapping("/{id}")
     @ApiOperation(value = "getTransactionById", notes = "Get transaction by id")
-    public ResponseEntity<ResponseObject> getTransactionById(@PathVariable Long id) {
+    public Mono<TransactionDTO> getTransactionById(@PathVariable Long id) {
         log.info("Id de movimiento a eliminar: id={}", id);
-        transactionUseCase.getTransactionById(id);
-        return ResponseEntity.ok(new ResponseObject("ok", "Transaction with id " + id + " deleted correctly", ""));
+        return transactionUseCase.getTransactionById(id);
     }
 
     @GetMapping("/reportes")
     @ApiOperation(value = "getTransactionByUserAndDate", notes = "Gets all transactions made by date range and customer")
-    public ResponseEntity<List<TransactionsDTO>> getTransactionByUserAndDate(@RequestParam String fechaInicial, @RequestParam String fechaFinal, @RequestParam String cliente,
-                                                                             @RequestHeader("Authorization") String token){
-        log.info("Datos de entrada para reporteria de movimientos:{],{},{}",fechaInicial,fechaFinal,cliente);
-        CustomerDTO customer =  customerService.getCustomer(cliente,token);
-        return ResponseEntity.ok(transactionUseCase.getMovementsByUserAndDate( LocalDate.parse(fechaInicial),   LocalDate.parse(fechaFinal),customer));
+    public Flux<TransactionsDTO> getTransactionByUserAndDate(@RequestParam String fechaInicial,
+                                                             @RequestParam String fechaFinal,
+                                                             @RequestParam String cliente,
+                                                             @RequestParam String numeroCuenta,
+                                                             @RequestHeader("Authorization") String token) {
+        log.info("Datos de entrada para reporteria de movimientos:{],{},{}", fechaInicial, fechaFinal, cliente);
+        CustomerDTO customer = customerService.getCustomer(cliente, token);
+        return transactionUseCase.getMovementsByUserAndDate(LocalDate.parse(fechaInicial), LocalDate.parse(fechaFinal), customer, numeroCuenta);
     }
 
     @GetMapping("/enviar_reporte")
     @ApiOperation(value = "sendAccountStatus", notes = "Gets all transactions made by date range and customer")
-    public ResponseEntity<List<TransactionsDTO>> sendAccountStatus(@RequestHeader("Authorization") String token,
-                                                                   @RequestParam String fechaInicial,
-                                                                   @RequestParam String fechaFinal,
-                                                                   @RequestParam String cliente){
-        log.info("Datos de entrada para enviar reporteria de movimientos:{],{},{}",fechaInicial,fechaFinal,cliente);
-        CustomerDTO customer = customerService.getCustomer(cliente,token);
-        List<TransactionsDTO> transactions = transactionUseCase.getMovementsByUserAndDate(LocalDate.parse(fechaInicial), LocalDate.parse(fechaFinal), customer);
-        kafkaTemplate.send(topicName,transactions);
-        return ResponseEntity.ok(transactions);
+    public Flux<TransactionsDTO> sendAccountStatus(@RequestHeader("Authorization") String token,
+                                                   @RequestParam String fechaInicial,
+                                                   @RequestParam String fechaFinal,
+                                                   @RequestParam String cliente,
+                                                   @RequestParam String numeroCuenta) {
+        log.info("Datos de entrada para enviar reporteria de movimientos:{],{},{}", fechaInicial, fechaFinal, cliente);
+        CustomerDTO customer = customerService.getCustomer(cliente, token);
+        Flux<TransactionsDTO> transactions = transactionUseCase.getMovementsByUserAndDate(LocalDate.parse(fechaInicial), LocalDate.parse(fechaFinal), customer, numeroCuenta);
+        transactions.doOnNext(transaction -> kafkaTemplate.send(topicName, transaction));
+        return transactions;
     }
 
 }
